@@ -1,0 +1,17 @@
+# Discord Bot Token / environment variables
+.env
+token.env
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Editor / system files
+.vscode/
+.DS_Store
+Thumbs.db
