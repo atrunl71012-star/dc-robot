@@ -1,20 +1,30 @@
 {
-  "852859715062595587": {
-    "name": "atrunl71012",
-    "level": 1,
-    "exp": 170,
-    "exp_multiplier": 1.0,
-    "blackjack_wins": 4,
-    "blackjack_losses": 5
-  },
-  "1018840948727357483": {
-    "name": "andre14052",
-    "level": 1
-  },
-  "816911440027451413": {
-    "name": "leo1.205",
-    "level": 1,
-    "exp": 50,
-    "exp_multiplier": 1.0
-  }
+    "852859715062595587": {
+        "name": "atrunl71012",
+        "level": 4,
+        "exp": 20,
+        "exp_multiplier": 1.0,
+        "blackjack_wins": 21,
+        "blackjack_losses": 24,
+        "money": 1290
+    },
+    "1018840948727357483": {
+        "name": "andre14052",
+        "level": 1
+    },
+    "816911440027451413": {
+        "name": "leo1.205",
+        "level": 1,
+        "exp": 50,
+        "exp_multiplier": 1.0
+    },
+    "868854646322642994": {
+        "name": "putong4278",
+        "level": 2,
+        "exp": 0,
+        "exp_multiplier": 1.0,
+        "blackjack_wins": 4,
+        "blackjack_losses": 5,
+        "money": 200
+    }
 }
