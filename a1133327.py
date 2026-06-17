@@ -59,7 +59,7 @@ def save_exp_claim(data):
     with open(file_exp_claim, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
 
-#===防呆===
+#===防呆=======================
 def Nfool(user_id,user):
     data = load_game()
     if user_id not in data:
@@ -96,7 +96,7 @@ scheduler = AsyncIOScheduler()
 scheduler_started = False
 
 @client.event
-async def on_ready():
+async def on_ready(): 
     global scheduler_started
 
     if not scheduler_started:
@@ -108,14 +108,14 @@ async def on_ready():
     print("機器人身分:" + str(client.user))
 
 @tree.command(name="ping", description="回覆 Pong!") #指令
-async def ping(interaction: discord.Interaction):
-    await interaction.response.send_message("Pong!")
+async def ping(interaction: discord.Interaction): 
+    await interaction.response.send_message("Pong!") 
 
 @tree.command(name="hi",description="打招呼")
-async def hi(interaction: discord.Interaction):
+async def hi(interaction: discord.Interaction): 
     await interaction.response.send_message("你好啊!")
 
-#===提醒的指令===============================
+#===提醒的指令 /hint=========================================================================================================
 async def send_reminder(channel_id: int, user_id: int, reminder_text: str):
     channel = client.get_channel(channel_id)
 
@@ -136,12 +136,12 @@ async def send_reminder(channel_id: int, user_id: int, reminder_text: str):
     app_commands.Choice(name="分鐘", value="minutes"),
     app_commands.Choice(name="小時", value="hours"),
 ])
-async def hint(
+async def hint( 
     interaction: discord.Interaction,
     amount: app_commands.Range[int, 1, 86400],
     unit: app_commands.Choice[str],
     text: str
-):
+    ):
     if unit.value == "seconds":
         remind_at = datetime.now() + timedelta(seconds=amount)
         unit_name = "秒"
@@ -155,7 +155,7 @@ async def hint(
         await interaction.response.send_message("不支援的時間單位", ephemeral=True)
         return
 
-    scheduler.add_job(
+    scheduler.add_job( # 添加提醒任務 APScheduler套件
         send_reminder,
         "date",
         run_date=remind_at,
@@ -169,7 +169,7 @@ async def hint(
 
 
 
-# === 21點指令 ===
+# === 21點指令 /21========================================================================================================
 @tree.command(name="21", description="遊玩21點")
 @app_commands.describe(bet="賭注金額，最高 128000")
 async def blackjack(interaction: discord.Interaction, bet: int):
@@ -188,7 +188,7 @@ async def blackjack(interaction: discord.Interaction, bet: int):
         with open("game.json", "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
 
-    def ensure_player(data):
+    def ensure_player(data): # 確保玩家資料存在
         if user_id not in data:
             data[user_id] = {
                 "name": user.name,
@@ -247,9 +247,9 @@ async def blackjack(interaction: discord.Interaction, bet: int):
 
     def card_value(card):
         rank = card[0]
-        if rank in ["J", "Q", "K"]:
+        if rank in ["J", "Q", "K"]: #J、Q、K 都算 10 點
             return 10
-        if rank == "A":
+        if rank == "A": #A 牌初始算 11 點，後面會根據總點數調整
             return 11
         return int(rank)
 
@@ -257,13 +257,13 @@ async def blackjack(interaction: discord.Interaction, bet: int):
         total = sum(card_value(card) for card in hand)
         aces = sum(1 for card in hand if card[0] == "A")
 
-        while total > 21 and aces > 0:
+        while total > 21 and aces > 0: #A牌可以從11點變成1點
             total -= 10
             aces -= 1
 
         return total
 
-    def hand_text(hand, hide_first=False):
+    def hand_text(hand, hide_first=False): #檢測到莊家第一張牌要隱藏
         if hide_first:
             return "?? " + " ".join(f"{rank}{suit}" for rank, suit in hand[1:])
         return " ".join(f"{rank}{suit}" for rank, suit in hand)
@@ -272,7 +272,7 @@ async def blackjack(interaction: discord.Interaction, bet: int):
     player_hand = [deck.pop(), deck.pop()]
     dealer_hand = [deck.pop(), deck.pop()]
 
-    class BlackjackView(discord.ui.View):
+    class BlackjackView(discord.ui.View): #建立21點的按鈕介面
         def __init__(self):
             super().__init__(timeout=120)
             self.ended = False
@@ -291,7 +291,7 @@ async def blackjack(interaction: discord.Interaction, bet: int):
         def get_embed(self):
             player_points = hand_value(player_hand)
 
-            embed = discord.Embed(
+            embed = discord.Embed( #建立嵌入訊息
                 title="🃏 21點 Blackjack",
                 description=(
                     f"**你的手牌（{player_points}點）**\n"
@@ -350,14 +350,14 @@ async def blackjack(interaction: discord.Interaction, bet: int):
 
             save_game_data(data)
 
-        async def resolve(self, interaction_btn: discord.Interaction):
+        async def resolve(self, interaction_btn: discord.Interaction): #結算遊戲結果
             while hand_value(dealer_hand) < 17:
                 dealer_hand.append(deck.pop())
 
             player_points = hand_value(player_hand)
             dealer_points = hand_value(dealer_hand)
 
-            if dealer_points > 21:
+            if dealer_points > 21: #莊家爆牌
                 result = "dealer_bust"
             elif player_points > dealer_points:
                 result = "win"
@@ -427,7 +427,7 @@ async def blackjack(interaction: discord.Interaction, bet: int):
             btn.callback = replay_callback
             return btn
 
-        @discord.ui.button(label="要牌 Hit", style=discord.ButtonStyle.primary, emoji="➕")
+        @discord.ui.button(label="要牌 Hit", style=discord.ButtonStyle.primary, emoji="➕") #按鈕要牌
         async def hit(self, interaction_btn: discord.Interaction, button: discord.ui.Button):
             if interaction_btn.user.id != interaction.user.id:
                 await interaction_btn.response.send_message("這不是你的遊戲!", ephemeral=True)
@@ -457,7 +457,7 @@ async def blackjack(interaction: discord.Interaction, bet: int):
                     view=self
                 )
 
-        @discord.ui.button(label="停牌 Stand", style=discord.ButtonStyle.danger, emoji="✋")
+        @discord.ui.button(label="停牌 Stand", style=discord.ButtonStyle.danger, emoji="✋") #按鈕停牌
         async def stand(self, interaction_btn: discord.Interaction, button: discord.ui.Button):
             if interaction_btn.user.id != interaction.user.id:
                 await interaction_btn.response.send_message("這不是你的遊戲!", ephemeral=True)
@@ -470,8 +470,8 @@ async def blackjack(interaction: discord.Interaction, bet: int):
 
     view = BlackjackView()
 
-    if hand_value(player_hand) == 21:
-        while hand_value(dealer_hand) < 17:
+    if hand_value(player_hand) == 21: #如果玩家一開始就是 21 點，直接結算
+        while hand_value(dealer_hand) < 17: #莊家補牌到至少 17 點
             dealer_hand.append(deck.pop())
 
         if hand_value(dealer_hand) == 21:
@@ -479,7 +479,7 @@ async def blackjack(interaction: discord.Interaction, bet: int):
         else:
             result = "win"
 
-        view.ended = True
+        view.ended = True #標記遊戲結束
         view.disable_game_buttons()
         view.record_result(result)
         view.add_item(view.replay_button())
@@ -489,35 +489,35 @@ async def blackjack(interaction: discord.Interaction, bet: int):
             view=view
         )
     else:
-        await interaction.response.send_message(
+        await interaction.response.send_message( 
             embed=view.get_embed(),
             view=view
         )
-#========================================================
-#===挖礦mine================================
+
+#===挖礦 /mine===================================================================================================================
 
 MINE_DATA_FILE = Path("mine_data.json")
 MINE_DURATION_SECONDS = 60
 
 MINE_ORES = [
-    {"name": "石頭", "value": 1, "weight": 4},
-    {"name": "銅礦", "value": 10, "weight": 50},
-    {"name": "鐵礦", "value": 25, "weight": 30},
-    {"name": "銀礦", "value": 50, "weight": 10},
-    {"name": "金礦", "value": 100, "weight": 5},
-    {"name": "鑽石礦", "value": 500, "weight": 1},
+    {"name": "石頭", "value": 1, "weight": 4,"up":50},
+    {"name": "銅礦", "value": 10, "weight": 50,"up":30},
+    {"name": "鐵礦", "value": 25, "weight": 30,"up":25},
+    {"name": "銀礦", "value": 50, "weight": 10,"up":25},
+    {"name": "金礦", "value": 100, "weight": 5,"up":20},
+    {"name": "鑽石礦", "value": 500, "weight": 1,"up":20},
 ]
 
 
 @tree.command(name="mine", description="開啟挖礦派遣")
 async def mine(interaction: discord.Interaction):
     def load_mine_data():
-        if not MINE_DATA_FILE.exists():
+        if not MINE_DATA_FILE.exists(): #如果沒有檔案就回傳預設結構
             return {"users": {}}
 
         try:
             with MINE_DATA_FILE.open("r", encoding="utf-8") as file:
-                return json.load(file)
+                return json.load(file) 
         except json.JSONDecodeError:
             return {"users": {}}
 
@@ -544,7 +544,7 @@ async def mine(interaction: discord.Interaction):
 
         return user_data
 
-    def add_money_to_user(user_id: int, amount: int):
+    def add_money_to_user(user_id: int, amount: int): #增加金錢到玩家帳戶
         data = load_game()
         user_key = str(user_id)
 
@@ -567,9 +567,11 @@ async def mine(interaction: discord.Interaction):
         level = 1
         value = ore["value"]
 
-        while random.random() < 0.20: #20%機率升級
+        while random.random() < ore.get("up", 0)/100: # 根據up屬性計算升級機率
             level += 1
-            value *= 2 #價值x2
+            value *= 3 #價值x3
+            if level >= 10: #最高10級
+                break
 
         display_name = ore["name"] if level == 1 else f"{level}級{ore['name']}"
 
@@ -594,7 +596,7 @@ async def mine(interaction: discord.Interaction):
 
         return f"{minutes} 分鐘 {remain_seconds} 秒"
 
-    def build_mine_embed(user_id: int):
+    def build_mine_embed(user_id: int): #建立一個card，顯示派遣位狀態和最高價值礦物
         data = load_mine_data()
         user_data = get_mine_user(data, user_id)
         now = int(time.time())
@@ -632,10 +634,10 @@ async def mine(interaction: discord.Interaction):
             inline=False
         )
 
-        embed.set_footer(text="提示：完成後再按一次派遣位即可領取並自動賣出。")
+        embed.set_footer(text="提示：完成後按派遣位即可領取、自動賣出，並立刻開始下一次派遣。")
         return embed
 
-    class MineView(discord.ui.View):
+    class MineView(discord.ui.View): #建立顯示按鈕
         def __init__(self, owner_id: int):
             super().__init__(timeout=300)
             self.owner_id = owner_id
@@ -649,7 +651,7 @@ async def mine(interaction: discord.Interaction):
                 button.callback = self.make_slot_callback(index)
                 self.add_item(button)
 
-        def make_slot_callback(self, slot_index: int):
+        def make_slot_callback(self, slot_index: int): #點擊按鈕後
             async def slot_callback(interaction_btn: discord.Interaction):
                 if interaction_btn.user.id != self.owner_id:
                     await interaction_btn.response.send_message("這不是你的礦場!", ephemeral=True)
@@ -673,8 +675,8 @@ async def mine(interaction: discord.Interaction):
                     )
                     return
 
-                if now < slot["end_at"]:
-                    remaining = slot["end_at"] - now
+                if now < slot["end_at"]: #如果還沒到結束時間，計算剩餘時間並回覆
+                    remaining = slot["end_at"] - now 
                     await interaction_btn.response.send_message(
                         f"派遣位 {slot_index + 1} 還需要 {format_seconds(remaining)} 才能領取。",
                         ephemeral=True
@@ -689,9 +691,13 @@ async def mine(interaction: discord.Interaction):
                     user_data["best"] = result
                     
 
-                user_data["slots"][slot_index] = None
+                user_data["slots"][slot_index] = { #派遣完成後重置派遣位
+                "started_at": now,
+                "end_at": now + MINE_DURATION_SECONDS
+                }
+
                 save_mine_data(data)
-                await interaction_btn.response.defer() #先回應按鈕互動，避免 Discord 的 3 秒超時
+                await interaction_btn.response.defer() #先回應按鈕互動，避免Discord按鈕回應超時
                 await interaction_btn.message.edit( #更新嵌入和按鈕狀態
                     embed=build_mine_embed(self.owner_id),
                     view=MineView(self.owner_id)
@@ -714,7 +720,7 @@ async def mine(interaction: discord.Interaction):
     )
 
 
-# === 查詢玩家資料 (卡片) ===
+# === 查詢玩家資料 (卡片)  /card==================================================================================================
 @tree.command(name="card", description="查詢玩家基本資料")
 async def card(interaction: discord.Interaction):
     user = interaction.user
@@ -768,7 +774,7 @@ async def card(interaction: discord.Interaction):
     # 寄出/輸出這張卡片 [1]
     await interaction.response.send_message(embed=embed)
 
-#領錢錢
+#===領錢 /money==================================================================================================================
 @tree.command(name="money", description="領錢錢")
 async def money(interaction: discord.Interaction):
     user = interaction.user
@@ -809,7 +815,7 @@ async def money(interaction: discord.Interaction):
         f"目前金幣：**{player['money']}**"
     )
 
-# === 吐納指令 ===
+# === 吐納指令 /exp=============================================================================================================
 @tree.command(name="exp", description="吐納：獲得少量經驗值（每整點可領取一次）")
 async def exp(interaction: discord.Interaction):
     user = interaction.user
@@ -860,7 +866,7 @@ async def exp(interaction: discord.Interaction):
         f"獲得 **{gained_exp}** 點經驗值（基礎經驗 {level*50} × {multiplier:.2f}）\n"
     )
 
-#===============================
+#=== 接收訊息 ============================================================================================================================
 @client.event
 async def on_message(message):
     if message.author.bot: #如果收到的訊息是機器人發的,就直接跳過 [1]
@@ -902,5 +908,6 @@ async def on_message(message):
 TOKEN = os.getenv("DISCORD_TOKEN") #從環境變數讀取token
 client.run(TOKEN)
 #安裝機器人 權限數字:4504011944695872
-#https://discord.com/oauth2/authorize?client_id=1506167105450545243&permissions=4504011944695872&scope=bot%20applications.commands
-#https://discord.com/developers/applications
+#https://discord.com/developers/applications   -> DC機器人官網連結
+#https://discord.com/oauth2/authorize?client_id=1506167105450545243&permissions=8&integration_type=0&scope=bot+applications.commands
+#上面網址是邀請機器人加入伺服器的連結,把client_id改成你的機器人ID,permissions改成你需要的權限數字,就可以邀請機器人了

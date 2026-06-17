@@ -10,31 +10,46 @@
     },
     "852859715062595587": {
       "slots": [
-        null,
-        null,
-        null
+        {
+          "started_at": 1781717374,
+          "end_at": 1781717434
+        },
+        {
+          "started_at": 1781717377,
+          "end_at": 1781717437
+        },
+        {
+          "started_at": 1781717379,
+          "end_at": 1781717439
+        }
       ],
       "best": {
-        "name": "銀礦",
-        "base_name": "銀礦",
+        "name": "鑽石礦",
+        "base_name": "鑽石礦",
         "level": 1,
-        "value": 50
+        "value": 500
       }
     },
     "868854646322642994": {
       "slots": [
         {
-          "started_at": 1781699643,
-          "end_at": 1781699703
+          "started_at": 1781717242,
+          "end_at": 1781717302
         },
-        null,
-        null
+        {
+          "started_at": 1781717247,
+          "end_at": 1781717307
+        },
+        {
+          "started_at": 1781717249,
+          "end_at": 1781717309
+        }
       ],
       "best": {
-        "name": "金礦",
+        "name": "3級金礦",
         "base_name": "金礦",
-        "level": 1,
-        "value": 100
+        "level": 3,
+        "value": 900
       }
     },
     "1090318298752745542": {
@@ -65,19 +80,46 @@
     "816911440027451413": {
       "slots": [
         {
-          "started_at": 1781699589,
-          "end_at": 1781699649
+          "started_at": 1781715307,
+          "end_at": 1781715367
         },
         {
-          "started_at": 1781699591,
-          "end_at": 1781699651
+          "started_at": 1781715327,
+          "end_at": 1781715387
         },
         {
-          "started_at": 1781699593,
-          "end_at": 1781699653
+          "started_at": 1781715329,
+          "end_at": 1781715389
         }
       ],
-      "best": null
+      "best": {
+        "name": "2級銅礦",
+        "base_name": "銅礦",
+        "level": 2,
+        "value": 30
+      }
+    },
+    "401648007159742474": {
+      "slots": [
+        {
+          "started_at": 1781700480,
+          "end_at": 1781700540
+        },
+        {
+          "started_at": 1781700485,
+          "end_at": 1781700545
+        },
+        {
+          "started_at": 1781700484,
+          "end_at": 1781700544
+        }
+      ],
+      "best": {
+        "name": "鐵礦",
+        "base_name": "鐵礦",
+        "level": 1,
+        "value": 25
+      }
     }
   }
 }
