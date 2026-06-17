@@ -1,0 +1,83 @@
+{
+  "users": {
+    "1018840948727357483": {
+      "slots": [
+        null,
+        null,
+        null
+      ],
+      "best": null
+    },
+    "852859715062595587": {
+      "slots": [
+        null,
+        null,
+        null
+      ],
+      "best": {
+        "name": "銀礦",
+        "base_name": "銀礦",
+        "level": 1,
+        "value": 50
+      }
+    },
+    "868854646322642994": {
+      "slots": [
+        {
+          "started_at": 1781699643,
+          "end_at": 1781699703
+        },
+        null,
+        null
+      ],
+      "best": {
+        "name": "金礦",
+        "base_name": "金礦",
+        "level": 1,
+        "value": 100
+      }
+    },
+    "1090318298752745542": {
+      "slots": [
+        null,
+        null,
+        null
+      ],
+      "best": null
+    },
+    "895184621245988885": {
+      "slots": [
+        {
+          "started_at": 1781699496,
+          "end_at": 1781699556
+        },
+        {
+          "started_at": 1781699498,
+          "end_at": 1781699558
+        },
+        {
+          "started_at": 1781699500,
+          "end_at": 1781699560
+        }
+      ],
+      "best": null
+    },
+    "816911440027451413": {
+      "slots": [
+        {
+          "started_at": 1781699589,
+          "end_at": 1781699649
+        },
+        {
+          "started_at": 1781699591,
+          "end_at": 1781699651
+        },
+        {
+          "started_at": 1781699593,
+          "end_at": 1781699653
+        }
+      ],
+      "best": null
+    }
+  }
+}

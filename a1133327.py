@@ -3,7 +3,12 @@ from discord import app_commands
 import json
 import os
 import random
-from datetime import datetime
+import time
+
+from datetime import datetime, timedelta
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from pathlib import Path
+
 from dotenv import load_dotenv
 load_dotenv("token.env") #從 token.env 檔案讀取環境變數
 
@@ -87,12 +92,20 @@ intents.guild_messages = True
 
 client = discord.Client(intents=intents) #預設意圖
 tree = app_commands.CommandTree(client) #指令樹
+scheduler = AsyncIOScheduler()
+scheduler_started = False
 
-@client.event #事件
+@client.event
 async def on_ready():
-    await tree.sync() #同步指令
+    global scheduler_started
+
+    if not scheduler_started:
+        scheduler.start()
+        scheduler_started = True
+
+    await tree.sync() #同步指令到 Discord
     print("機器人已啟動")
-    print("機器人身分:"+str(client.user))
+    print("機器人身分:" + str(client.user))
 
 @tree.command(name="ping", description="回覆 Pong!") #指令
 async def ping(interaction: discord.Interaction):
@@ -101,6 +114,60 @@ async def ping(interaction: discord.Interaction):
 @tree.command(name="hi",description="打招呼")
 async def hi(interaction: discord.Interaction):
     await interaction.response.send_message("你好啊!")
+
+#===提醒的指令===============================
+async def send_reminder(channel_id: int, user_id: int, reminder_text: str):
+    channel = client.get_channel(channel_id)
+
+    if channel is None:
+        channel = await client.fetch_channel(channel_id)
+
+    await channel.send(f"<@{user_id}> 提醒時間到：{reminder_text}")
+
+
+@tree.command(name="hint", description="設定提醒")
+@app_commands.describe(
+    unit="時間單位",
+    amount="多久後提醒(建議先選擇時間單位)",
+    text="要提醒的文字"
+)
+@app_commands.choices(unit=[
+    app_commands.Choice(name="秒", value="seconds"),
+    app_commands.Choice(name="分鐘", value="minutes"),
+    app_commands.Choice(name="小時", value="hours"),
+])
+async def hint(
+    interaction: discord.Interaction,
+    amount: app_commands.Range[int, 1, 86400],
+    unit: app_commands.Choice[str],
+    text: str
+):
+    if unit.value == "seconds":
+        remind_at = datetime.now() + timedelta(seconds=amount)
+        unit_name = "秒"
+    elif unit.value == "minutes":
+        remind_at = datetime.now() + timedelta(minutes=amount)
+        unit_name = "分鐘"
+    elif unit.value == "hours":
+        remind_at = datetime.now() + timedelta(hours=amount)
+        unit_name = "小時"
+    else:
+        await interaction.response.send_message("不支援的時間單位", ephemeral=True)
+        return
+
+    scheduler.add_job(
+        send_reminder,
+        "date",
+        run_date=remind_at,
+        args=[interaction.channel_id, interaction.user.id, text]
+    )
+
+    await interaction.response.send_message(
+        f"已設定提醒：{amount} {unit_name}後提醒你「{text}」",
+        ephemeral=True
+    )
+
+
 
 # === 21點指令 ===
 @tree.command(name="21", description="遊玩21點")
@@ -427,6 +494,225 @@ async def blackjack(interaction: discord.Interaction, bet: int):
             view=view
         )
 #========================================================
+#===挖礦mine================================
+
+MINE_DATA_FILE = Path("mine_data.json")
+MINE_DURATION_SECONDS = 60
+
+MINE_ORES = [
+    {"name": "石頭", "value": 1, "weight": 4},
+    {"name": "銅礦", "value": 10, "weight": 50},
+    {"name": "鐵礦", "value": 25, "weight": 30},
+    {"name": "銀礦", "value": 50, "weight": 10},
+    {"name": "金礦", "value": 100, "weight": 5},
+    {"name": "鑽石礦", "value": 500, "weight": 1},
+]
+
+
+@tree.command(name="mine", description="開啟挖礦派遣")
+async def mine(interaction: discord.Interaction):
+    def load_mine_data():
+        if not MINE_DATA_FILE.exists():
+            return {"users": {}}
+
+        try:
+            with MINE_DATA_FILE.open("r", encoding="utf-8") as file:
+                return json.load(file)
+        except json.JSONDecodeError:
+            return {"users": {}}
+
+    def save_mine_data(data):
+        with MINE_DATA_FILE.open("w", encoding="utf-8") as file:
+            json.dump(data, file, ensure_ascii=False, indent=2)
+
+    def get_mine_user(data, user_id: int):
+        user_key = str(user_id)
+
+        if user_key not in data["users"]:
+            data["users"][user_key] = {
+                "slots": [None, None, None],
+                "best": None
+            }
+
+        user_data = data["users"][user_key]
+
+        if "slots" not in user_data:
+            user_data["slots"] = [None, None, None]
+
+        if "best" not in user_data:
+            user_data["best"] = None
+
+        return user_data
+
+    def add_money_to_user(user_id: int, amount: int):
+        data = load_game()
+        user_key = str(user_id)
+
+        if user_key not in data:
+            data[user_key] = {}
+
+        if "money" not in data[user_key]:
+            data[user_key]["money"] = 0
+
+        data[user_key]["money"] += amount
+        save_game(data)
+
+    def roll_mine_result():
+        ore = random.choices(
+            MINE_ORES,
+            weights=[item["weight"] for item in MINE_ORES],
+            k=1
+        )[0]
+
+        level = 1
+        value = ore["value"]
+
+        while random.random() < 0.20: #20%機率升級
+            level += 1
+            value *= 2 #價值x2
+
+        display_name = ore["name"] if level == 1 else f"{level}級{ore['name']}"
+
+        return {
+            "name": display_name,
+            "base_name": ore["name"],
+            "level": level,
+            "value": value
+        }
+
+    def format_seconds(seconds: int):
+        seconds = max(0, seconds)
+
+        if seconds < 60:
+            return f"{seconds} 秒"
+
+        minutes = seconds // 60
+        remain_seconds = seconds % 60
+
+        if remain_seconds == 0:
+            return f"{minutes} 分鐘"
+
+        return f"{minutes} 分鐘 {remain_seconds} 秒"
+
+    def build_mine_embed(user_id: int):
+        data = load_mine_data()
+        user_data = get_mine_user(data, user_id)
+        now = int(time.time())
+
+        embed = discord.Embed(
+            title="⛏️ 挖礦派遣",
+            description="你有 3 個派遣位。每次派遣需要 1 分鐘，完成後按派遣位領取。",
+            color=0xC8913F
+        )
+
+        for index, slot in enumerate(user_data["slots"]):
+            if slot is None:
+                status = "可派遣"
+            elif now >= slot["end_at"]:
+                status = "✅ 已完成，可以領取"
+            else:
+                remaining = slot["end_at"] - now
+                status = f"⏳ 派遣中，剩餘 {format_seconds(remaining)}"
+
+            embed.add_field(
+                name=f"派遣位 {index + 1}",
+                value=status,
+                inline=False
+            )
+
+        best = user_data.get("best")
+        if best is None:
+            best_text = "尚未挖到任何礦物"
+        else:
+            best_text = f"{best['name']}，價值 {best['value']} 元"
+
+        embed.add_field(
+            name="最高價值礦物",
+            value=best_text,
+            inline=False
+        )
+
+        embed.set_footer(text="提示：完成後再按一次派遣位即可領取並自動賣出。")
+        return embed
+
+    class MineView(discord.ui.View):
+        def __init__(self, owner_id: int):
+            super().__init__(timeout=300)
+            self.owner_id = owner_id
+
+            for index in range(3):
+                button = discord.ui.Button(
+                    label=f"派遣位 {index + 1}",
+                    style=discord.ButtonStyle.primary,
+                    emoji="⛏️"
+                )
+                button.callback = self.make_slot_callback(index)
+                self.add_item(button)
+
+        def make_slot_callback(self, slot_index: int):
+            async def slot_callback(interaction_btn: discord.Interaction):
+                if interaction_btn.user.id != self.owner_id:
+                    await interaction_btn.response.send_message("這不是你的礦場!", ephemeral=True)
+                    return
+
+                data = load_mine_data()
+                user_data = get_mine_user(data, self.owner_id)
+                slot = user_data["slots"][slot_index]
+                now = int(time.time())
+
+                if slot is None:
+                    user_data["slots"][slot_index] = {
+                        "started_at": now,
+                        "end_at": now + MINE_DURATION_SECONDS
+                    }
+                    save_mine_data(data)
+                    await interaction_btn.response.defer()
+                    await interaction_btn.message.edit(
+                        embed=build_mine_embed(self.owner_id),
+                        view=MineView(self.owner_id)
+                    )
+                    return
+
+                if now < slot["end_at"]:
+                    remaining = slot["end_at"] - now
+                    await interaction_btn.response.send_message(
+                        f"派遣位 {slot_index + 1} 還需要 {format_seconds(remaining)} 才能領取。",
+                        ephemeral=True
+                    )
+                    return
+
+                result = roll_mine_result()
+                add_money_to_user(self.owner_id, result["value"])
+
+                best = user_data.get("best")
+                if best is None or result["value"] > best["value"]:
+                    user_data["best"] = result
+                    
+
+                user_data["slots"][slot_index] = None
+                save_mine_data(data)
+                await interaction_btn.response.defer() #先回應按鈕互動，避免 Discord 的 3 秒超時
+                await interaction_btn.message.edit( #更新嵌入和按鈕狀態
+                    embed=build_mine_embed(self.owner_id),
+                    view=MineView(self.owner_id)
+                )
+                await interaction_btn.followup.send(
+                    f"<@{self.owner_id}> 領取成功！挖到了 **{result['name']}**，"
+                    f"已自動賣出獲得 **{result['value']} 元**。",
+                    ephemeral=True
+                )
+
+            return slot_callback
+
+    data = load_mine_data()
+    get_mine_user(data, interaction.user.id)
+    save_mine_data(data)
+
+    await interaction.response.send_message(
+        embed=build_mine_embed(interaction.user.id),
+        view=MineView(interaction.user.id)
+    )
+
 
 # === 查詢玩家資料 (卡片) ===
 @tree.command(name="card", description="查詢玩家基本資料")
